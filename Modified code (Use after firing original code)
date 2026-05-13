@@ -1,0 +1,76 @@
+<script>
+(function() {
+    var origXMLHttpRequest = XMLHttpRequest;
+
+    XMLHttpRequest = function() {
+        var requestURL;
+
+        var xhr = new origXMLHttpRequest();
+        var origOpen = xhr.open;
+        var origSend = xhr.send;
+
+        xhr.open = function(method, url) {
+            requestURL = url;
+            return origOpen.apply(this, arguments);
+        };
+
+        xhr.send = function(data) {
+
+            if (/.+\/admin-ajax\.php/.test(requestURL)) {
+
+                xhr.addEventListener('load', function() {
+
+                    if (xhr.readyState === 4 && xhr.status === 200) {
+
+                        try {
+
+                            var response = JSON.parse(xhr.responseText);
+
+                            if (response.success && data instanceof FormData) {
+
+                                var requestBody = {};
+
+                                data.forEach(function(value, key) {
+                                    requestBody[key] = value;
+                                });
+
+                                if (requestBody.action === 'elementor_pro_forms_send_form') {
+
+                                    window.dataLayer = window.dataLayer || [];
+
+                                    dataLayer.push({
+                                        event: 'whitepaper_bgm_submit',
+                                        inputs: {
+                                            form_id: requestBody.form_id || '',
+                                            first_name: requestBody['form_fields[Vorname]'] || '',
+                                            last_name: requestBody['form_fields[Nachname]'] || '',
+                                            email: requestBody['form_fields[email]'] || '',
+                                            phone: requestBody['form_fields[phone]'] || '',
+                                            company: requestBody['form_fields[company]'] || '',
+                                            message: requestBody['form_fields[message]'] || '',
+                                            privacy_acceptance: requestBody['form_fields[field_334d817]'] || ''
+                                        }
+                                    });
+
+                                }
+
+                            }
+
+                        } catch (e) {
+                            console.error('DataLayer Push Error:', e);
+                        }
+
+                    }
+
+                });
+
+            }
+
+            return origSend.apply(this, arguments);
+        };
+
+        return xhr;
+    };
+
+})();
+</script>
